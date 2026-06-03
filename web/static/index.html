@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>URL Shortener Admin</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>Short URLs</h1>
+          <p class="muted">Create and monitor short links.</p>
+        </div>
+        <a class="logout" href="/logout">Sign out</a>
+      </header>
+
+      <section class="create-panel">
+        <form id="create-form">
+          <label for="url">Long URL</label>
+          <div class="create-row">
+            <input id="url" name="url" type="url" placeholder="https://example.com/path" required>
+            <button type="submit">Shorten</button>
+          </div>
+          <p id="form-message" class="message" role="status"></p>
+        </form>
+        <div id="result" class="result hidden">
+          <span id="short-url"></span>
+          <button id="copy-button" type="button">Copy</button>
+        </div>
+      </section>
+
+      <section class="list-panel">
+        <div class="section-header">
+          <h2>Recent URLs</h2>
+          <button id="refresh-button" type="button">Refresh</button>
+        </div>
+        <div id="url-list" class="url-list"></div>
+        <button id="load-more-button" class="load-more hidden" type="button">Load more</button>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

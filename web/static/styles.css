@@ -1,0 +1,195 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172026;
+  background: #f5f7f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 32px 0;
+}
+
+.topbar,
+.section-header,
+.create-row,
+.result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar,
+.section-header {
+  justify-content: space-between;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 30px;
+}
+
+h2 {
+  font-size: 18px;
+}
+
+.muted {
+  color: #62717a;
+  margin-top: 4px;
+}
+
+.logout {
+  color: #245b73;
+  text-decoration: none;
+}
+
+.create-panel,
+.list-panel {
+  background: #ffffff;
+  border: 1px solid #d9e0e3;
+  border-radius: 8px;
+  margin-top: 24px;
+  padding: 20px;
+}
+
+label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+input {
+  border: 1px solid #b8c4ca;
+  border-radius: 6px;
+  min-height: 42px;
+  padding: 0 12px;
+  width: 100%;
+}
+
+button {
+  background: #176b87;
+  border: 0;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  min-height: 42px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+button.secondary,
+#refresh-button,
+#copy-button,
+.load-more {
+  background: #eef3f5;
+  color: #172026;
+}
+
+.message {
+  min-height: 22px;
+  margin-top: 10px;
+  color: #9c3d10;
+}
+
+.result {
+  background: #edf8f1;
+  border: 1px solid #b8dfc4;
+  border-radius: 6px;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 12px;
+}
+
+.hidden {
+  display: none;
+}
+
+.url-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.url-card {
+  border: 1px solid #d9e0e3;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.url-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.url-main {
+  min-width: 0;
+}
+
+.short-link {
+  color: #176b87;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.long-url {
+  color: #526169;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  color: #62717a;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.chart {
+  align-items: end;
+  display: grid;
+  gap: 3px;
+  grid-template-columns: repeat(24, minmax(4px, 1fr));
+  height: 72px;
+  margin-top: 16px;
+}
+
+.bar {
+  background: #55a6c1;
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+}
+
+.load-more {
+  margin-top: 16px;
+  width: 100%;
+}
+
+@media (max-width: 680px) {
+  .topbar,
+  .create-row,
+  .url-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
