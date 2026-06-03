@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      cassandra:
+        image: cassandra:5.0
+        ports:
+          - 9042:9042
+        env:
+          CASSANDRA_CLUSTER_NAME: url-shortener-ci
+          CASSANDRA_DC: dc1
+          CASSANDRA_RACK: rack1
+          CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+        options: >-
+          --health-cmd "cqlsh -e 'describe keyspaces'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run unit tests
+        run: go test ./...
+
+      - name: Build binary
+        run: go build -o /tmp/url-shortener ./cmd/url-shortener
+
+      - name: Run Cassandra integration tests
+        env:
+          CASSANDRA_INTEGRATION: "1"
+          CASSANDRA_HOSTS: localhost:9042
+          CASSANDRA_KEYSPACE: url_shortener_ci
+        run: go test ./internal/storage/cassandra -run TestIntegrationURLLifecycleAndHourlyHits -count=1 -v
+
+      - name: Start app for UI smoke test
+        env:
+          AUTH_DEV_BYPASS: "true"
+          SESSION_SECRET: ci-local-session-secret
+          HTTP_ADDR: :18080
+          PUBLIC_BASE_URL: http://localhost:18080
+          ADMIN_BASE_URL: http://localhost:18080
+          CASSANDRA_HOSTS: localhost:9042
+          CASSANDRA_KEYSPACE: url_shortener_ci_ui
+        run: |
+          go run ./cmd/url-shortener > /tmp/url-shortener.log 2>&1 &
+          echo "$!" > /tmp/url-shortener.pid
+          for i in {1..60}; do
+            if curl -fsS http://localhost:18080/readyz >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/url-shortener.log
+          exit 1
+
+      - name: Run admin UI smoke test
+        env:
+          UI_BASE_URL: http://localhost:18080
+        run: node test/ui/admin_smoke.mjs
+
+      - name: Stop app
+        if: always()
+        run: |
+          if [ -f /tmp/url-shortener.pid ]; then
+            kill "$(cat /tmp/url-shortener.pid)" || true
+          fi
+          if [ -f /tmp/url-shortener.log ]; then
+            cat /tmp/url-shortener.log
+          fi
+
+      - name: Build Docker image
+        run: docker build -t url-shortener:ci .

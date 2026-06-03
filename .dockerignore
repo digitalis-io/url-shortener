@@ -1,0 +1,11 @@
+.git
+.github
+.gocache
+.gomodcache
+.env
+plan
+test
+*.test
+*.out
+coverage.*
+url-shortener
