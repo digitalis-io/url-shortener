@@ -98,6 +98,12 @@ UI_BASE_URL=http://localhost:18080 node test/ui/admin_smoke.mjs
 
 GitHub Actions runs the unit tests, binary build, Cassandra integration test, admin UI smoke test, and Docker image build in `.github/workflows/ci.yml`. The workflow starts a `cassandra:5.0` service container for the Cassandra-backed checks.
 
+When a GitHub release is published, the same workflow waits for the test job to pass, then builds and pushes the Docker image to GitHub Container Registry:
+
+```text
+ghcr.io/digitalis-io/url-shortner
+```
+
 ## Container
 
 Build the application image:
