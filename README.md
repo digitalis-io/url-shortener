@@ -52,6 +52,12 @@ CASSANDRA_HOSTS=localhost:9042
 CASSANDRA_KEYSPACE=url_shortener
 CASSANDRA_USERNAME=
 CASSANDRA_PASSWORD=
+CASSANDRA_SSL_ENABLED=false
+CASSANDRA_SSL_CA_FILE=
+CASSANDRA_SSL_SERVER_NAME=
+CASSANDRA_SSL_INSECURE_SKIP_VERIFY=false
+CASSANDRA_SSL_CERT_FILE=
+CASSANDRA_SSL_KEY_FILE=
 SESSION_SECRET=
 AUTH_DEV_BYPASS=false
 SAML_ENTITY_ID=https://admin-short.example/saml/metadata
@@ -64,6 +70,8 @@ CODE_LENGTH=7
 ```
 
 `PUBLIC_BASE_URL` is used in generated short URLs. `ADMIN_BASE_URL` is used for the admin UI, SAML routes, and admin API calls.
+
+For Cassandra clusters that require TLS, set `CASSANDRA_SSL_ENABLED=true`. By default TLS verifies the server certificate and host name. Use `CASSANDRA_SSL_CA_FILE` to trust a private CA, `CASSANDRA_SSL_SERVER_NAME` when the certificate name differs from the dialed host, and `CASSANDRA_SSL_CERT_FILE` plus `CASSANDRA_SSL_KEY_FILE` when client certificate authentication is required. `CASSANDRA_SSL_INSECURE_SKIP_VERIFY=true` disables server certificate verification and should only be used for local development.
 
 For Azure Entra ID, configure the Enterprise Application with:
 

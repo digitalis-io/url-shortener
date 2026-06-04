@@ -16,10 +16,16 @@ type Config struct {
 	PublicHost    string
 	AdminHost     string
 
-	CassandraHosts    []string
-	CassandraKeyspace string
-	CassandraUsername string
-	CassandraPassword string
+	CassandraHosts                 []string
+	CassandraKeyspace              string
+	CassandraUsername              string
+	CassandraPassword              string
+	CassandraSSLEnabled            bool
+	CassandraSSLCAFile             string
+	CassandraSSLServerName         string
+	CassandraSSLInsecureSkipVerify bool
+	CassandraSSLCertFile           string
+	CassandraSSLKeyFile            string
 
 	SAMLEntityID        string
 	SAMLACSURL          string
@@ -43,28 +49,34 @@ func Load() (Config, error) {
 	adminBaseURL := env("ADMIN_BASE_URL", publicBaseURL)
 
 	cfg := Config{
-		AppEnv:                  env("APP_ENV", "local"),
-		HTTPAddr:                env("HTTP_ADDR", ":8080"),
-		PublicBaseURL:           trimRightSlash(publicBaseURL),
-		AdminBaseURL:            trimRightSlash(adminBaseURL),
-		CassandraHosts:          splitCSV(env("CASSANDRA_HOSTS", "localhost:9042")),
-		CassandraKeyspace:       env("CASSANDRA_KEYSPACE", "url_shortener"),
-		CassandraUsername:       os.Getenv("CASSANDRA_USERNAME"),
-		CassandraPassword:       os.Getenv("CASSANDRA_PASSWORD"),
-		SAMLEntityID:            env("SAML_ENTITY_ID", adminBaseURL+"/saml/metadata"),
-		SAMLACSURL:              env("SAML_ACS_URL", adminBaseURL+"/saml/acs"),
-		SAMLIDPMetadataURL:      os.Getenv("SAML_IDP_METADATA_URL"),
-		SAMLIDPMetadataFile:     os.Getenv("SAML_IDP_METADATA_FILE"),
-		SAMLPrivateKeyFile:      os.Getenv("SAML_PRIVATE_KEY_FILE"),
-		SAMLCertificateFile:     os.Getenv("SAML_CERTIFICATE_FILE"),
-		SessionSecret:           os.Getenv("SESSION_SECRET"),
-		AuthDevBypass:           envBool("AUTH_DEV_BYPASS", false),
-		DevUserID:               env("DEV_USER_ID", "local-dev-user"),
-		DevUserEmail:            env("DEV_USER_EMAIL", "dev@example.com"),
-		CodeLength:              envInt("CODE_LENGTH", 7),
-		CreateRateLimitPerMin:   envInt("CREATE_RATE_LIMIT_PER_MINUTE", 60),
-		ClickEventBufferSize:    envInt("CLICK_EVENT_BUFFER_SIZE", 1000),
-		ClickEventFlushInterval: envDuration("CLICK_EVENT_FLUSH_INTERVAL", time.Second),
+		AppEnv:                         env("APP_ENV", "local"),
+		HTTPAddr:                       env("HTTP_ADDR", ":8080"),
+		PublicBaseURL:                  trimRightSlash(publicBaseURL),
+		AdminBaseURL:                   trimRightSlash(adminBaseURL),
+		CassandraHosts:                 splitCSV(env("CASSANDRA_HOSTS", "localhost:9042")),
+		CassandraKeyspace:              env("CASSANDRA_KEYSPACE", "url_shortener"),
+		CassandraUsername:              os.Getenv("CASSANDRA_USERNAME"),
+		CassandraPassword:              os.Getenv("CASSANDRA_PASSWORD"),
+		CassandraSSLEnabled:            envBool("CASSANDRA_SSL_ENABLED", false),
+		CassandraSSLCAFile:             os.Getenv("CASSANDRA_SSL_CA_FILE"),
+		CassandraSSLServerName:         os.Getenv("CASSANDRA_SSL_SERVER_NAME"),
+		CassandraSSLInsecureSkipVerify: envBool("CASSANDRA_SSL_INSECURE_SKIP_VERIFY", false),
+		CassandraSSLCertFile:           os.Getenv("CASSANDRA_SSL_CERT_FILE"),
+		CassandraSSLKeyFile:            os.Getenv("CASSANDRA_SSL_KEY_FILE"),
+		SAMLEntityID:                   env("SAML_ENTITY_ID", adminBaseURL+"/saml/metadata"),
+		SAMLACSURL:                     env("SAML_ACS_URL", adminBaseURL+"/saml/acs"),
+		SAMLIDPMetadataURL:             os.Getenv("SAML_IDP_METADATA_URL"),
+		SAMLIDPMetadataFile:            os.Getenv("SAML_IDP_METADATA_FILE"),
+		SAMLPrivateKeyFile:             os.Getenv("SAML_PRIVATE_KEY_FILE"),
+		SAMLCertificateFile:            os.Getenv("SAML_CERTIFICATE_FILE"),
+		SessionSecret:                  os.Getenv("SESSION_SECRET"),
+		AuthDevBypass:                  envBool("AUTH_DEV_BYPASS", false),
+		DevUserID:                      env("DEV_USER_ID", "local-dev-user"),
+		DevUserEmail:                   env("DEV_USER_EMAIL", "dev@example.com"),
+		CodeLength:                     envInt("CODE_LENGTH", 7),
+		CreateRateLimitPerMin:          envInt("CREATE_RATE_LIMIT_PER_MINUTE", 60),
+		ClickEventBufferSize:           envInt("CLICK_EVENT_BUFFER_SIZE", 1000),
+		ClickEventFlushInterval:        envDuration("CLICK_EVENT_FLUSH_INTERVAL", time.Second),
 	}
 
 	cfg.PublicHost = hostFromURL(cfg.PublicBaseURL)

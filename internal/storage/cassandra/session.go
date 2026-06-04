@@ -2,6 +2,8 @@ package cassandra
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"strings"
 	"time"
 
@@ -20,7 +22,10 @@ func Connect(cfg config.Config) (*Store, error) {
 		return nil, err
 	}
 
-	cluster := baseCluster(cfg)
+	cluster, err := baseCluster(cfg)
+	if err != nil {
+		return nil, err
+	}
 	cluster.Keyspace = cfg.CassandraKeyspace
 	session, err := cluster.CreateSession()
 	if err != nil {
@@ -29,7 +34,7 @@ func Connect(cfg config.Config) (*Store, error) {
 	return &Store{session: session, keyspace: cfg.CassandraKeyspace}, nil
 }
 
-func baseCluster(cfg config.Config) *gocql.ClusterConfig {
+func baseCluster(cfg config.Config) (*gocql.ClusterConfig, error) {
 	cluster := gocql.NewCluster(cfg.CassandraHosts...)
 	cluster.Consistency = gocql.LocalQuorum
 	cluster.ConnectTimeout = 10 * time.Second
@@ -40,11 +45,40 @@ func baseCluster(cfg config.Config) *gocql.ClusterConfig {
 			Password: cfg.CassandraPassword,
 		}
 	}
-	return cluster
+	sslOpts, err := cassandraSSLOptions(cfg)
+	if err != nil {
+		return nil, err
+	}
+	cluster.SslOpts = sslOpts
+	return cluster, nil
+}
+
+func cassandraSSLOptions(cfg config.Config) (*gocql.SslOptions, error) {
+	if !cfg.CassandraSSLEnabled {
+		return nil, nil
+	}
+	if (cfg.CassandraSSLCertFile == "") != (cfg.CassandraSSLKeyFile == "") {
+		return nil, errors.New("CASSANDRA_SSL_CERT_FILE and CASSANDRA_SSL_KEY_FILE must be configured together")
+	}
+
+	return &gocql.SslOptions{
+		Config: &tls.Config{
+			MinVersion:         tls.VersionTLS12,
+			ServerName:         cfg.CassandraSSLServerName,
+			InsecureSkipVerify: cfg.CassandraSSLInsecureSkipVerify,
+		},
+		CaPath:                 cfg.CassandraSSLCAFile,
+		CertPath:               cfg.CassandraSSLCertFile,
+		KeyPath:                cfg.CassandraSSLKeyFile,
+		EnableHostVerification: !cfg.CassandraSSLInsecureSkipVerify,
+	}, nil
 }
 
 func ensureSchema(cfg config.Config) error {
-	cluster := baseCluster(cfg)
+	cluster, err := baseCluster(cfg)
+	if err != nil {
+		return err
+	}
 	session, err := cluster.CreateSession()
 	if err != nil {
 		return err
