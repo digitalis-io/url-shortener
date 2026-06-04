@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { setTimeout as sleep } from "node:timers/promises";
 
 const baseURL = process.env.UI_BASE_URL || "http://localhost:18080";
-const chromeBin = process.env.CHROME_BIN || "google-chrome";
+const chromeBin = resolveChromeBin();
 const debugPort = process.env.CHROME_DEBUG_PORT || "9223";
 const userDataDir = process.env.CHROME_USER_DATA_DIR || "/tmp/url-shortener-chrome-smoke";
 
@@ -19,6 +20,10 @@ const chrome = spawn(chromeBin, [
 
 chrome.stderr.on("data", (chunk) => {
   if (process.env.CHROME_DEBUG) process.stderr.write(chunk);
+});
+
+chrome.on("error", (err) => {
+  console.error(`failed to start Chrome from ${chromeBin}: ${err.message}`);
 });
 
 try {
@@ -109,7 +114,7 @@ try {
 
 async function waitForWebSocketURL() {
   const endpoint = `http://127.0.0.1:${debugPort}/json/list`;
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 300; i++) {
     try {
       const response = await fetch(endpoint);
       if (response.ok) {
@@ -123,6 +128,24 @@ async function waitForWebSocketURL() {
     await sleep(100);
   }
   throw new Error("Chrome DevTools endpoint did not start");
+}
+
+function resolveChromeBin() {
+  if (process.env.CHROME_BIN) return process.env.CHROME_BIN;
+  for (const candidate of [
+    "/usr/bin/google-chrome",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/chromium",
+    "google-chrome",
+    "google-chrome-stable",
+    "chromium-browser",
+    "chromium",
+  ]) {
+    if (candidate.startsWith("/") && !existsSync(candidate)) continue;
+    return candidate;
+  }
+  return "google-chrome";
 }
 
 function connectCDP(wsURL) {
