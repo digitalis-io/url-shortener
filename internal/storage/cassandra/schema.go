@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS url_shortener.urls_by_code (
   expires_at timestamp,
   deleted_at timestamp,
   custom_alias boolean
-);
+) WITH default_time_to_live = 7776000;
 
 CREATE TABLE IF NOT EXISTS url_shortener.urls_by_created_day (
   day text,
@@ -46,7 +46,14 @@ CREATE TABLE IF NOT EXISTS url_shortener.urls_by_created_day (
   deleted_at timestamp,
   custom_alias boolean,
   PRIMARY KEY ((day), created_at, code)
-) WITH CLUSTERING ORDER BY (created_at DESC);
+) WITH CLUSTERING ORDER BY (created_at DESC)
+  AND default_time_to_live = 7776000;
+
+ALTER TABLE url_shortener.urls_by_code
+WITH default_time_to_live = 7776000;
+
+ALTER TABLE url_shortener.urls_by_created_day
+WITH default_time_to_live = 7776000;
 
 CREATE TABLE IF NOT EXISTS url_shortener.hits_by_short_url_hour (
   short_url text,

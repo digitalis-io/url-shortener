@@ -137,3 +137,5 @@ docker run --rm -p 8080:8080 \
 - `urls_by_code`: redirect and metadata source of truth.
 - `urls_by_created_day`: recent admin list without scanning.
 - `hits_by_short_url_hour`: hourly hit counters for admin charts.
+
+URL metadata tables use a Cassandra `default_time_to_live` of `7776000` seconds, which is 90 days. The hourly hit counter table does not use this URL metadata TTL.
