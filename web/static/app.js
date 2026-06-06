@@ -68,7 +68,7 @@ async function renderURL(item) {
     </div>
     <div class="chart" aria-label="Hourly hits chart"></div>
   `;
-  card.querySelector("button").addEventListener("click", () => navigator.clipboard.writeText(item.short_url));
+  card.querySelector("button").addEventListener("click", (event) => copyText(item.short_url, event.currentTarget));
   const chart = card.querySelector(".chart");
   try {
     const hits = await api(`/api/v1/urls/${encodeURIComponent(item.code)}/hits`);
@@ -122,10 +122,46 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-copyButton.addEventListener("click", () => navigator.clipboard.writeText(shortURL.textContent));
+copyButton.addEventListener("click", () => copyText(shortURL.textContent, copyButton));
 refreshButton.addEventListener("click", () => loadURLs(true));
 loadMoreButton.addEventListener("click", () => loadURLs(false));
 
 loadURLs(true).catch((error) => {
   list.textContent = error.message;
 });
+
+async function copyText(value, button) {
+  const text = String(value || "").trim();
+  if (!text) return;
+
+  const original = button.textContent;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      fallbackCopy(text);
+    }
+    button.textContent = "Copied";
+  } catch {
+    button.textContent = "Copy failed";
+  } finally {
+    window.setTimeout(() => {
+      button.textContent = original;
+    }, 1500);
+  }
+}
+
+function fallbackCopy(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("copy failed");
+}
