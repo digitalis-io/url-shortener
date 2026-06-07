@@ -12,10 +12,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -283,13 +281,13 @@ func (a *Auth) verify(value string) (sessionPayload, error) {
 }
 
 func newSAMLSP(cfg config.Config) (*samlsp.Middleware, error) {
-	hasMetadata := cfg.SAMLIDPMetadataURL != "" || cfg.SAMLIDPMetadataFile != ""
-	hasCert := cfg.SAMLCertificateFile != "" && cfg.SAMLPrivateKeyFile != ""
+	hasMetadata := cfg.SAMLIDPMetadataURL != "" || cfg.SAMLIDPMetadata != ""
+	hasCert := cfg.SAMLCertificate != "" && cfg.SAMLPrivateKey != ""
 	if !hasMetadata && !hasCert {
 		return nil, nil
 	}
 	if !hasMetadata || !hasCert {
-		return nil, fmt.Errorf("SAML configuration requires IdP metadata plus certificate and private key files")
+		return nil, fmt.Errorf("SAML configuration requires IdP metadata plus a certificate and private key")
 	}
 
 	adminURL, err := url.Parse(cfg.AdminBaseURL)
@@ -297,7 +295,7 @@ func newSAMLSP(cfg config.Config) (*samlsp.Middleware, error) {
 		return nil, fmt.Errorf("parse ADMIN_BASE_URL: %w", err)
 	}
 
-	keyPair, err := tls.LoadX509KeyPair(cfg.SAMLCertificateFile, cfg.SAMLPrivateKeyFile)
+	keyPair, err := tls.X509KeyPair([]byte(cfg.SAMLCertificate), []byte(cfg.SAMLPrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("load SAML certificate/key: %w", err)
 	}
@@ -329,19 +327,10 @@ func newSAMLSP(cfg config.Config) (*samlsp.Middleware, error) {
 }
 
 func loadIDPMetadata(cfg config.Config) (*saml.EntityDescriptor, error) {
-	if cfg.SAMLIDPMetadataFile != "" {
-		file, err := os.Open(cfg.SAMLIDPMetadataFile)
+	if cfg.SAMLIDPMetadata != "" {
+		metadata, err := samlsp.ParseMetadata([]byte(cfg.SAMLIDPMetadata))
 		if err != nil {
-			return nil, fmt.Errorf("open SAML IdP metadata file: %w", err)
-		}
-		defer file.Close()
-		data, err := io.ReadAll(file)
-		if err != nil {
-			return nil, fmt.Errorf("read SAML IdP metadata file: %w", err)
-		}
-		metadata, err := samlsp.ParseMetadata(data)
-		if err != nil {
-			return nil, fmt.Errorf("parse SAML IdP metadata file: %w", err)
+			return nil, fmt.Errorf("parse SAML IdP metadata: %w", err)
 		}
 		return metadata, nil
 	}

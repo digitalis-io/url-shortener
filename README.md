@@ -81,9 +81,9 @@ AUTH_DEV_BYPASS=false
 SAML_ENTITY_ID=https://admin-short.example/saml/metadata
 SAML_ACS_URL=https://admin-short.example/saml/acs
 SAML_IDP_METADATA_URL=
-SAML_IDP_METADATA_FILE=
-SAML_PRIVATE_KEY_FILE=
-SAML_CERTIFICATE_FILE=
+SAML_IDP_METADATA=
+SAML_PRIVATE_KEY=
+SAML_CERTIFICATE=
 CODE_LENGTH=7
 ```
 
@@ -100,6 +100,27 @@ For Azure Entra ID, configure the Enterprise Application with:
 - Sign-on URL: `ADMIN_BASE_URL`
 
 The app accepts any user who successfully authenticates through the configured Entra ID tenant.
+
+SAML credentials are provided as inline values rather than file paths, so they can be sourced directly from a Kubernetes Secret. `SAML_CERTIFICATE` and `SAML_PRIVATE_KEY` hold the service-provider certificate and key as PEM content, and the IdP metadata is supplied either as inline XML via `SAML_IDP_METADATA` or fetched from `SAML_IDP_METADATA_URL`. In Kubernetes, store these in a `Secret` and inject them with `valueFrom.secretKeyRef` so nothing is mounted as a file:
+
+```yaml
+env:
+  - name: SAML_CERTIFICATE
+    valueFrom:
+      secretKeyRef:
+        name: url-shortener-saml
+        key: certificate.pem
+  - name: SAML_PRIVATE_KEY
+    valueFrom:
+      secretKeyRef:
+        name: url-shortener-saml
+        key: private-key.pem
+  - name: SAML_IDP_METADATA
+    valueFrom:
+      secretKeyRef:
+        name: url-shortener-saml
+        key: idp-metadata.xml
+```
 
 ## Tests
 

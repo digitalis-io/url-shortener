@@ -46,16 +46,16 @@ type Config struct {
 	CassandraSpeculativeAttempts    int
 	CassandraSpeculativeDelay       time.Duration
 
-	SAMLEntityID        string
-	SAMLACSURL          string
-	SAMLIDPMetadataURL  string
-	SAMLIDPMetadataFile string
-	SAMLPrivateKeyFile  string
-	SAMLCertificateFile string
-	SessionSecret       string
-	AuthDevBypass       bool
-	DevUserID           string
-	DevUserEmail        string
+	SAMLEntityID       string
+	SAMLACSURL         string
+	SAMLIDPMetadataURL string
+	SAMLIDPMetadata    string
+	SAMLPrivateKey     string
+	SAMLCertificate    string
+	SessionSecret      string
+	AuthDevBypass      bool
+	DevUserID          string
+	DevUserEmail       string
 
 	CodeLength              int
 	CreateRateLimitPerMin   int
@@ -105,9 +105,9 @@ func Load() (Config, error) {
 		SAMLEntityID:            env("SAML_ENTITY_ID", adminBaseURL+"/saml/metadata"),
 		SAMLACSURL:              env("SAML_ACS_URL", adminBaseURL+"/saml/acs"),
 		SAMLIDPMetadataURL:      os.Getenv("SAML_IDP_METADATA_URL"),
-		SAMLIDPMetadataFile:     os.Getenv("SAML_IDP_METADATA_FILE"),
-		SAMLPrivateKeyFile:      os.Getenv("SAML_PRIVATE_KEY_FILE"),
-		SAMLCertificateFile:     os.Getenv("SAML_CERTIFICATE_FILE"),
+		SAMLIDPMetadata:         os.Getenv("SAML_IDP_METADATA"),
+		SAMLPrivateKey:          os.Getenv("SAML_PRIVATE_KEY"),
+		SAMLCertificate:         os.Getenv("SAML_CERTIFICATE"),
 		SessionSecret:           os.Getenv("SESSION_SECRET"),
 		AuthDevBypass:           envBool("AUTH_DEV_BYPASS", false),
 		DevUserID:               env("DEV_USER_ID", "local-dev-user"),
