@@ -58,6 +58,24 @@ CASSANDRA_SSL_SERVER_NAME=
 CASSANDRA_SSL_INSECURE_SKIP_VERIFY=false
 CASSANDRA_SSL_CERT_FILE=
 CASSANDRA_SSL_KEY_FILE=
+CASSANDRA_CONSISTENCY=LOCAL_QUORUM
+CASSANDRA_SERIAL_CONSISTENCY=LOCAL_SERIAL
+CASSANDRA_LOCAL_DC=
+CASSANDRA_PROTO_VERSION=4
+CASSANDRA_NUM_CONNS=2
+CASSANDRA_PAGE_SIZE=5000
+CASSANDRA_CONNECT_TIMEOUT=10s
+CASSANDRA_TIMEOUT=10s
+CASSANDRA_WRITE_TIMEOUT=
+CASSANDRA_RECONNECT_INTERVAL=60s
+CASSANDRA_SOCKET_KEEPALIVE=15s
+CASSANDRA_MAX_WAIT_SCHEMA_AGREEMENT=60s
+CASSANDRA_RETRY_ATTEMPTS=3
+CASSANDRA_RETRY_MIN_BACKOFF=100ms
+CASSANDRA_RETRY_MAX_BACKOFF=2s
+CASSANDRA_SPECULATIVE_EXECUTION_ENABLED=false
+CASSANDRA_SPECULATIVE_ATTEMPTS=1
+CASSANDRA_SPECULATIVE_DELAY=50ms
 SESSION_SECRET=
 AUTH_DEV_BYPASS=false
 SAML_ENTITY_ID=https://admin-short.example/saml/metadata
@@ -70,6 +88,8 @@ CODE_LENGTH=7
 ```
 
 `PUBLIC_BASE_URL` is used in generated short URLs. `ADMIN_BASE_URL` is used for the admin UI, SAML routes, and admin API calls.
+
+`CASSANDRA_CONSISTENCY` sets the consistency level for every read and write (default `LOCAL_QUORUM`); `CASSANDRA_SERIAL_CONSISTENCY` controls the serial level used by lightweight transactions such as the `IF NOT EXISTS` guard on short-code creation (default `LOCAL_SERIAL`). Both accept any gocql level (`ONE`, `QUORUM`, `EACH_QUORUM`, `LOCAL_ONE`, …) and an invalid value fails fast at startup. Set `CASSANDRA_LOCAL_DC` to your datacenter name so the token-aware policy keeps coordinator selection DC-local — important whenever you use a `LOCAL_*` consistency level in a multi-DC cluster. Failed idempotent reads and deletes are retried with exponential backoff (`CASSANDRA_RETRY_ATTEMPTS`, `CASSANDRA_RETRY_MIN_BACKOFF`, `CASSANDRA_RETRY_MAX_BACKOFF`; set attempts to `0` to disable). Counter increments for click tracking are never retried because they are not idempotent. Enable `CASSANDRA_SPECULATIVE_EXECUTION_ENABLED=true` to issue redundant idempotent reads after `CASSANDRA_SPECULATIVE_DELAY` to trim tail latency. The remaining knobs (`CASSANDRA_PROTO_VERSION`, `CASSANDRA_NUM_CONNS`, `CASSANDRA_PAGE_SIZE`, `CASSANDRA_CONNECT_TIMEOUT`, `CASSANDRA_TIMEOUT`, `CASSANDRA_WRITE_TIMEOUT`, `CASSANDRA_RECONNECT_INTERVAL`, `CASSANDRA_SOCKET_KEEPALIVE`, `CASSANDRA_MAX_WAIT_SCHEMA_AGREEMENT`) tune the connection pool and timeouts; leave them unset to use the defaults shown above.
 
 For Cassandra clusters that require TLS, set `CASSANDRA_SSL_ENABLED=true`. By default TLS verifies the server certificate and host name. Use `CASSANDRA_SSL_CA_FILE` to trust a private CA, `CASSANDRA_SSL_SERVER_NAME` when the certificate name differs from the dialed host, and `CASSANDRA_SSL_CERT_FILE` plus `CASSANDRA_SSL_KEY_FILE` when client certificate authentication is required. `CASSANDRA_SSL_INSECURE_SKIP_VERIFY=true` disables server certificate verification and should only be used for local development.
 

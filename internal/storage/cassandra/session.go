@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 type Store struct {
 	session  *gocql.Session
 	keyspace string
+	specExec gocql.SpeculativeExecutionPolicy
 }
 
 func Connect(cfg config.Config) (*Store, error) {
@@ -31,14 +33,70 @@ func Connect(cfg config.Config) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{session: session, keyspace: cfg.CassandraKeyspace}, nil
+	return &Store{
+		session:  session,
+		keyspace: cfg.CassandraKeyspace,
+		specExec: speculativeExecutionPolicy(cfg),
+	}, nil
 }
 
 func baseCluster(cfg config.Config) (*gocql.ClusterConfig, error) {
 	cluster := gocql.NewCluster(cfg.CassandraHosts...)
-	cluster.Consistency = gocql.LocalQuorum
-	cluster.ConnectTimeout = 10 * time.Second
-	cluster.Timeout = 10 * time.Second
+
+	consistency, err := parseConsistency(cfg.CassandraConsistency, gocql.LocalQuorum)
+	if err != nil {
+		return nil, err
+	}
+	serial, err := parseConsistency(cfg.CassandraSerialConsistency, gocql.LocalSerial)
+	if err != nil {
+		return nil, err
+	}
+	cluster.Consistency = consistency
+	cluster.SerialConsistency = serial
+
+	cluster.ConnectTimeout = durationOr(cfg.CassandraConnectTimeout, 10*time.Second)
+	cluster.Timeout = durationOr(cfg.CassandraTimeout, 10*time.Second)
+	if cfg.CassandraWriteTimeout > 0 {
+		cluster.WriteTimeout = cfg.CassandraWriteTimeout
+	}
+	if cfg.CassandraProtoVersion > 0 {
+		cluster.ProtoVersion = cfg.CassandraProtoVersion
+	}
+	if cfg.CassandraNumConns > 0 {
+		cluster.NumConns = cfg.CassandraNumConns
+	}
+	if cfg.CassandraPageSize > 0 {
+		cluster.PageSize = cfg.CassandraPageSize
+	}
+	if cfg.CassandraReconnectInterval > 0 {
+		cluster.ReconnectInterval = cfg.CassandraReconnectInterval
+	}
+	if cfg.CassandraSocketKeepalive > 0 {
+		cluster.SocketKeepalive = cfg.CassandraSocketKeepalive
+	}
+	if cfg.CassandraMaxWaitSchemaAgreement > 0 {
+		cluster.MaxWaitSchemaAgreement = cfg.CassandraMaxWaitSchemaAgreement
+	}
+
+	// Token-aware routing keeps coordinator selection on replicas that own the
+	// partition; when a local DC is configured the fallback stays DC-local so a
+	// LOCAL_* consistency level does not silently cross datacenters.
+	var fallback gocql.HostSelectionPolicy
+	if cfg.CassandraLocalDC != "" {
+		fallback = gocql.DCAwareRoundRobinPolicy(cfg.CassandraLocalDC)
+	} else {
+		fallback = gocql.RoundRobinHostPolicy()
+	}
+	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(fallback)
+
+	if cfg.CassandraRetryAttempts > 0 {
+		cluster.RetryPolicy = &gocql.ExponentialBackoffRetryPolicy{
+			NumRetries: cfg.CassandraRetryAttempts,
+			Min:        durationOr(cfg.CassandraRetryMinBackoff, 100*time.Millisecond),
+			Max:        durationOr(cfg.CassandraRetryMaxBackoff, 2*time.Second),
+		}
+	}
+
 	if cfg.CassandraUsername != "" {
 		cluster.Authenticator = gocql.PasswordAuthenticator{
 			Username: cfg.CassandraUsername,
@@ -51,6 +109,43 @@ func baseCluster(cfg config.Config) (*gocql.ClusterConfig, error) {
 	}
 	cluster.SslOpts = sslOpts
 	return cluster, nil
+}
+
+// parseConsistency resolves a configured consistency name, falling back when the
+// value is empty and returning a descriptive error for an unknown level.
+func parseConsistency(name string, fallback gocql.Consistency) (gocql.Consistency, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return fallback, nil
+	}
+	consistency, err := gocql.ParseConsistencyWrapper(name)
+	if err != nil {
+		return 0, fmt.Errorf("invalid cassandra consistency %q: %w", name, err)
+	}
+	return consistency, nil
+}
+
+// speculativeExecutionPolicy returns a per-query speculative execution policy
+// when enabled, or nil to leave speculative execution off.
+func speculativeExecutionPolicy(cfg config.Config) gocql.SpeculativeExecutionPolicy {
+	if !cfg.CassandraSpeculativeEnabled {
+		return nil
+	}
+	attempts := cfg.CassandraSpeculativeAttempts
+	if attempts <= 0 {
+		attempts = 1
+	}
+	return &gocql.SimpleSpeculativeExecution{
+		NumAttempts:  attempts,
+		TimeoutDelay: durationOr(cfg.CassandraSpeculativeDelay, 50*time.Millisecond),
+	}
+}
+
+func durationOr(value, fallback time.Duration) time.Duration {
+	if value > 0 {
+		return value
+	}
+	return fallback
 }
 
 func cassandraSSLOptions(cfg config.Config) (*gocql.SslOptions, error) {
@@ -100,7 +195,18 @@ func (s *Store) Close() {
 }
 
 func (s *Store) Ready(ctx context.Context) error {
-	return s.session.Query("SELECT release_version FROM system.local").WithContext(ctx).Exec()
+	return s.readQuery("SELECT release_version FROM system.local").WithContext(ctx).Exec()
+}
+
+// readQuery builds a query for a read-only, retry-safe statement. Reads are
+// marked idempotent so the retry policy may safely re-issue them, and inherit
+// the configured speculative execution policy to trim tail latency.
+func (s *Store) readQuery(stmt string, values ...any) *gocql.Query {
+	query := s.session.Query(stmt, values...).Idempotent(true)
+	if s.specExec != nil {
+		query.SetSpeculativeExecutionPolicy(s.specExec)
+	}
+	return query
 }
 
 func dayKey(t time.Time) string {

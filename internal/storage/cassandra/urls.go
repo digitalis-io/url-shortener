@@ -50,7 +50,7 @@ func (s *Store) CreateURL(record shorturl.URLRecord) (bool, error) {
 		record.ExpiresAt,
 		record.DeletedAt,
 		record.CustomAlias,
-	).Exec()
+	).Idempotent(true).Exec()
 	if err != nil {
 		return false, err
 	}
@@ -61,7 +61,7 @@ func (s *Store) CreateURL(record shorturl.URLRecord) (bool, error) {
 func (s *Store) GetURL(code string) (shorturl.URLRecord, error) {
 	var record shorturl.URLRecord
 	var expiresAt, deletedAt *time.Time
-	err := s.session.Query(
+	err := s.readQuery(
 		`SELECT code, original_url, url_hash, created_by_id, created_by_email,
 			created_at, expires_at, deleted_at, custom_alias
 		 FROM urls_by_code WHERE code = ?`,
@@ -110,7 +110,7 @@ func (s *Store) ListRecent(opts shorturl.ListOptions) (shorturl.ListResult, erro
 		}
 
 		remaining := limit - len(records)
-		iter := s.session.Query(
+		iter := s.readQuery(
 			`SELECT code, original_url, created_by_id, created_by_email,
 				created_at, expires_at, deleted_at, custom_alias
 			 FROM urls_by_created_day
@@ -169,7 +169,7 @@ func (s *Store) SoftDelete(code string, deletedAt time.Time) error {
 		`UPDATE urls_by_code SET deleted_at = ? WHERE code = ?`,
 		deletedAt,
 		code,
-	).Exec(); err != nil {
+	).Idempotent(true).Exec(); err != nil {
 		return err
 	}
 	return s.session.Query(
@@ -179,7 +179,7 @@ func (s *Store) SoftDelete(code string, deletedAt time.Time) error {
 		dayKey(record.CreatedAt),
 		record.CreatedAt,
 		code,
-	).Exec()
+	).Idempotent(true).Exec()
 }
 
 func (s *Store) IncrementHourlyHits(shortURL string, hourStart time.Time) error {
@@ -193,7 +193,7 @@ func (s *Store) IncrementHourlyHits(shortURL string, hourStart time.Time) error 
 }
 
 func (s *Store) GetHourlyHits(shortURL string, from, to time.Time) ([]shorturl.HitBucket, error) {
-	iter := s.session.Query(
+	iter := s.readQuery(
 		`SELECT hour_start, hits
 		 FROM hits_by_short_url_hour
 		 WHERE short_url = ? AND hour_start >= ? AND hour_start < ?`,
