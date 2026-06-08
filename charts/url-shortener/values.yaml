@@ -1,0 +1,99 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/digitalis-io/url-shortner
+  tag: ""  # defaults to Chart.appVersion when empty
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  tls: []
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+app:
+  httpAddr: ":8080"
+  # publicBaseURL and adminBaseURL are required; override per environment.
+  publicBaseURL: "http://localhost:8080"
+  adminBaseURL: "http://localhost:8080"
+  codeLength: 7
+
+cassandra:
+  # hosts is required (non-empty); comma-separated host:port list.
+  hosts: "cassandra:9042"
+  keyspace: "url_shortener"
+  username: ""
+  password: ""  # mounted via Secret
+  existingSecret: ""  # use external Secret instead of rendering one
+  sslEnabled: false
+  localDC: ""
+  consistency: "LOCAL_QUORUM"
+
+session:
+  secret: ""  # mounted via Secret
+  existingSecret: ""
+
+saml:
+  entityID: ""
+  acsURL: ""
+  idpMetadataURL: ""
+  privateKey: ""  # PEM; mounted via Secret
+  certificate: ""  # PEM; mounted via Secret
+  existingSecret: ""
+
+auth:
+  devBypass: false  # MUST default false
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,94 @@
+suite: deployment
+templates:
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+tests:
+  - it: defaults the image tag to Chart.AppVersion when image.tag is empty
+    template: templates/deployment.yaml
+    chart:
+      appVersion: 1.2.3
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/digitalis-io/url-shortner:1.2.3
+
+  - it: honours an explicit image.tag override
+    template: templates/deployment.yaml
+    set:
+      image.tag: "deadbeef"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/digitalis-io/url-shortner:deadbeef
+
+  - it: applies a hardened security context
+    template: templates/deployment.yaml
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 65532
+      - equal:
+          path: spec.template.spec.securityContext.runAsGroup
+          value: 65532
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+
+  - it: sources SESSION_SECRET from a secretKeyRef, not a configMapKeyRef
+    template: templates/deployment.yaml
+    set:
+      session.secret: super-secret
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[0].name
+          value: SESSION_SECRET
+      - equal:
+          path: spec.template.spec.containers[0].env[0].valueFrom.secretKeyRef.key
+          value: SESSION_SECRET
+      - notExists:
+          path: spec.template.spec.containers[0].env[0].valueFrom.configMapKeyRef
+
+  - it: exposes the non-sensitive config via a ConfigMap envFrom
+    template: templates/deployment.yaml
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].envFrom
+          content:
+            configMapRef:
+              name: RELEASE-NAME-url-shortener
+
+  - it: reflects replicaCount in spec.replicas
+    template: templates/deployment.yaml
+    set:
+      replicaCount: 4
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 4
+
+  - it: omits spec.replicas when autoscaling is enabled
+    template: templates/deployment.yaml
+    set:
+      autoscaling.enabled: true
+    asserts:
+      - notExists:
+          path: spec.replicas
+
+  - it: defaults AUTH_DEV_BYPASS to false in the ConfigMap
+    template: templates/configmap.yaml
+    asserts:
+      - equal:
+          path: data.AUTH_DEV_BYPASS
+          value: "false"
+
+  - it: sets AUTH_DEV_BYPASS to true when auth.devBypass is enabled
+    template: templates/configmap.yaml
+    set:
+      auth.devBypass: true
+    asserts:
+      - equal:
+          path: data.AUTH_DEV_BYPASS
+          value: "true"
