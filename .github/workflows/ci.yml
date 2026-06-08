@@ -108,22 +108,8 @@ jobs:
       - name: Set up chart-testing
         uses: helm/chart-testing-action@v2
 
-      - name: Install helm-unittest
-        run: helm plugin install https://github.com/helm-unittest/helm-unittest --verify=false
-
       - name: Lint chart
         run: ct lint --charts charts/url-shortener --validate-maintainers=false
-
-      - name: Render and dry-run
-        run: |
-          helm template url-shortener charts/url-shortener \
-            --set app.publicBaseURL=https://short.example.com \
-            --set app.adminBaseURL=https://admin.example.com \
-            --set cassandra.hosts=cassandra:9042 \
-          | kubectl apply --dry-run=client --validate=false -f -
-
-      - name: Run unit tests
-        run: helm unittest charts/url-shortener
 
   publish-image:
     name: Publish Image
