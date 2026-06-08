@@ -63,6 +63,7 @@ jobs:
           ADMIN_BASE_URL: http://localhost:18080
           CASSANDRA_HOSTS: localhost:9042
           CASSANDRA_KEYSPACE: url_shortener_ci_ui
+          URL_SHORTENER_CREATE_KEYSPACE: "true"
         run: |
           go run ./cmd/url-shortener > /tmp/url-shortener.log 2>&1 &
           echo "$!" > /tmp/url-shortener.pid
