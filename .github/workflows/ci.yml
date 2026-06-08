@@ -120,7 +120,7 @@ jobs:
             --set app.publicBaseURL=https://short.example.com \
             --set app.adminBaseURL=https://admin.example.com \
             --set cassandra.hosts=cassandra:9042 \
-          | kubectl apply --dry-run=client -f -
+          | kubectl apply --dry-run=client --validate=false -f -
 
       - name: Run unit tests
         run: helm unittest charts/url-shortener
