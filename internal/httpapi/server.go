@@ -54,6 +54,14 @@ func (s *Server) Handler() http.Handler {
 	combined := s.combinedRouter()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/healthz":
+			s.health(w, r)
+			return
+		case "/readyz":
+			s.readyz(w, r)
+			return
+		}
 		host := normalizeHost(r.Host)
 		if s.cfg.AdminHost == "" || s.cfg.PublicHost == "" || s.cfg.AdminHost == s.cfg.PublicHost {
 			combined.ServeHTTP(w, r)
