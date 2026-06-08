@@ -197,6 +197,11 @@ func ensureSchema(cfg config.Config) error {
 	}
 	session.Close()
 
+	// gocql forbids reusing a TokenAwareHostPolicy across sessions — build a fresh cluster.
+	cluster, err = baseCluster(cfg)
+	if err != nil {
+		return err
+	}
 	cluster.Keyspace = cfg.CassandraKeyspace
 	session, err = cluster.CreateSession()
 	if err != nil {
