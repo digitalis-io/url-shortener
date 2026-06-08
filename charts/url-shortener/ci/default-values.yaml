@@ -1,0 +1,12 @@
+app:
+  publicBaseURL: https://short.example.com
+  adminBaseURL: https://admin.example.com
+
+cassandra:
+  hosts: cassandra:9042
+
+auth:
+  devBypass: true
+
+session:
+  secret: ci-test-secret
