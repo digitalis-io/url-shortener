@@ -1,0 +1,16 @@
+apiVersion: v2
+name: url-shortener
+description: A Go URL shortener backed by Cassandra, configured via env vars.
+type: application
+# version is the chart SemVer, kept in sync with the app release tag.
+version: 0.1.0
+# appVersion is overridden at package time via `helm package --app-version`.
+appVersion: "0.1.0"
+home: https://github.com/digitalis-io/url-shortener
+sources:
+  - https://github.com/digitalis-io/url-shortener
+kubeVersion: ">=1.29.0-0"
+keywords:
+  - url-shortener
+  - cassandra
+  - go

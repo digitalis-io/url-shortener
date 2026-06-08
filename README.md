@@ -186,6 +186,24 @@ docker run --rm -p 8080:8080 \
   url-shortener:local
 ```
 
+## Helm Chart
+
+A production-ready Helm chart lives in [`charts/url-shortener`](charts/url-shortener/README.md)
+and is published to the GitHub Container Registry as an OCI artifact on each release.
+
+```bash
+helm install url-shortener \
+  oci://ghcr.io/digitalis-io/helm-charts/url-shortener \
+  --version <version> \
+  --set app.publicBaseURL=https://short.example \
+  --set app.adminBaseURL=https://admin.example \
+  --set cassandra.hosts=cassandra:9042 \
+  --set session.secret=$(openssl rand -hex 32)
+```
+
+See the [chart README](charts/url-shortener/README.md) for the full values
+reference, secret handling, and upgrade notes.
+
 ## Cassandra Tables
 
 - `urls_by_code`: redirect and metadata source of truth.

@@ -1,0 +1,42 @@
+{{ .Chart.Name }} {{ .Chart.AppVersion }} has been deployed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+The application serves HTTP on container port 8080 (service port {{ .Values.service.port }}).
+
+{{- if .Values.ingress.enabled }}
+
+It is exposed through an Ingress at:
+{{- range .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host | default "<host>" }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if eq .Values.service.type "LoadBalancer" }}
+
+Service type is LoadBalancer. Get the external address (it may take a minute to provision):
+
+  kubectl get svc -n {{ .Release.Namespace }} -w {{ include "url-shortener.fullname" . }}
+
+Then browse to http://<EXTERNAL-IP>:{{ .Values.service.port }}
+{{- else if eq .Values.service.type "NodePort" }}
+
+Service type is NodePort. Find the assigned node port with:
+
+  kubectl get svc -n {{ .Release.Namespace }} {{ include "url-shortener.fullname" . }} -o jsonpath='{.spec.ports[0].nodePort}'
+{{- else }}
+
+Service type is ClusterIP. Port-forward to reach it locally:
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "url-shortener.fullname" . }} 8080:{{ .Values.service.port }}
+
+Then browse to http://localhost:8080
+{{- end }}
+
+Check readiness (verifies Cassandra connectivity):
+
+  kubectl exec -n {{ .Release.Namespace }} deploy/{{ include "url-shortener.fullname" . }} -- wget -qO- http://localhost:8080/readyz
+
+{{- if .Values.auth.devBypass }}
+
+WARNING: auth.devBypass is enabled. Every request is authenticated as a development
+user with NO real authentication. Do not use this in production.
+{{- end }}
