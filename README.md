@@ -78,6 +78,8 @@ CASSANDRA_SPECULATIVE_ATTEMPTS=1
 CASSANDRA_SPECULATIVE_DELAY=50ms
 SESSION_SECRET=
 AUTH_DEV_BYPASS=false
+AUTH_HEADER_ENABLED=false
+AUTH_USER_EMAIL_HEADER=Cf-Access-Authenticated-User-Email
 SAML_ENTITY_ID=https://admin-short.example/saml/metadata
 SAML_ACS_URL=https://admin-short.example/saml/acs
 SAML_IDP_METADATA_URL=
@@ -121,6 +123,17 @@ env:
         name: url-shortener-saml
         key: idp-metadata.xml
 ```
+
+### Cloudflare Access (header authentication)
+
+As an alternative to SAML, you can place the admin host behind Cloudflare Access (Zero Trust) and let the app trust the identity Cloudflare injects. Leave the `SAML_*` variables unset and set:
+
+```text
+AUTH_HEADER_ENABLED=true
+AUTH_USER_EMAIL_HEADER=Cf-Access-Authenticated-User-Email
+```
+
+When enabled, the app authenticates each admin request from the email in `AUTH_USER_EMAIL_HEADER` (Cloudflare Access sends `Cf-Access-Authenticated-User-Email`) and uses that email as both the user ID and email. The header is trusted **without signature verification**, so this mode is only safe when the origin is reachable exclusively through Cloudflare — for example via a `cloudflared` tunnel with no public ingress. If the origin can be reached directly, a client could spoof the header and impersonate any user. Keep `AUTH_HEADER_ENABLED=false` (the default) in any deployment where that guarantee does not hold. Header authentication and SAML are independent; if both are configured, the trusted header is checked first.
 
 ## Tests
 
