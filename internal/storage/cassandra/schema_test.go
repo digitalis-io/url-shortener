@@ -6,7 +6,7 @@ import (
 )
 
 func TestSchemaConfiguresURLTableTTL(t *testing.T) {
-	schema := strings.Join(schemaStatements("url_shortener_test"), ";\n")
+	schema := strings.Join(schemaStatements("url_shortener_test", "SimpleStrategy", 1), ";\n")
 
 	for _, want := range []string{
 		"CREATE TABLE IF NOT EXISTS url_shortener_test.urls_by_code",

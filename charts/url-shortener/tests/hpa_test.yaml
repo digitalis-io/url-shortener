@@ -1,0 +1,35 @@
+suite: HPA tests
+templates:
+  - hpa.yaml
+
+tests:
+  - it: does not render HPA when autoscaling disabled (default)
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders HPA when autoscaling enabled
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      autoscaling.enabled: true
+      autoscaling.minReplicas: 2
+      autoscaling.maxReplicas: 10
+      autoscaling.targetCPUUtilizationPercentage: 70
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.minReplicas
+          value: 2
+      - equal:
+          path: spec.maxReplicas
+          value: 10
+      - equal:
+          path: spec.metrics[0].resource.target.averageUtilization
+          value: 70

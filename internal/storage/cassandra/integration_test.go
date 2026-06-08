@@ -16,8 +16,11 @@ func TestIntegrationURLLifecycleAndHourlyHits(t *testing.T) {
 	}
 
 	store, err := Connect(config.Config{
-		CassandraHosts:    []string{envOr("CASSANDRA_HOSTS", "localhost:9042")},
-		CassandraKeyspace: envOr("CASSANDRA_KEYSPACE", "url_shortener_integration"),
+		CassandraHosts:              []string{envOr("CASSANDRA_HOSTS", "localhost:9042")},
+		CassandraKeyspace:           envOr("CASSANDRA_KEYSPACE", "url_shortener_integration"),
+		CassandraCreateKeyspace:     true,
+		CassandraReplicationStrategy: "SimpleStrategy",
+		CassandraReplicationFactor:  1,
 	})
 	if err != nil {
 		t.Fatalf("Connect: %v", err)

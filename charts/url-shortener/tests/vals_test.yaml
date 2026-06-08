@@ -1,0 +1,111 @@
+suite: vals-operator tests
+templates:
+  - cassandra-vals-secret.yaml
+  - secret.yaml
+
+tests:
+  - it: no ValsSecret rendered by default
+    template: cassandra-vals-secret.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders ValsSecret for cassandra auth when valsSecret enabled
+    template: cassandra-vals-secret.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.valsSecret.enabled: true
+      cassandra.valsSecret.ttl: 3600
+      cassandra.valsSecret.data.CASSANDRA_PASSWORD.ref: "ref+vault://secret/cassandra/password"
+      cassandra.valsSecret.data.CASSANDRA_PASSWORD.encoding: text
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isAPIVersion:
+          of: digitalis.io/v1
+      - isKind:
+          of: ValsSecret
+      - equal:
+          path: spec.ttl
+          value: 3600
+      - equal:
+          path: spec.name
+          value: RELEASE-NAME-url-shortener-cassandra
+      - equal:
+          path: spec.data.CASSANDRA_PASSWORD.ref
+          value: "ref+vault://secret/cassandra/password"
+
+  - it: uses custom name in spec.name when valsSecret.name set
+    template: cassandra-vals-secret.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.valsSecret.enabled: true
+      cassandra.valsSecret.name: my-cassandra-creds
+      cassandra.valsSecret.data.CASSANDRA_PASSWORD.ref: "ref+vault://secret/cassandra/password"
+    asserts:
+      - equal:
+          path: spec.name
+          value: my-cassandra-creds
+
+  - it: skips plain Cassandra Secret when valsSecret enabled
+    template: secret.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.valsSecret.enabled: true
+      cassandra.valsSecret.data.CASSANDRA_PASSWORD.ref: "ref+vault://secret/cassandra/password"
+    asserts:
+      - notContainsDocument:
+          kind: Secret
+          apiVersion: v1
+          name: RELEASE-NAME-url-shortener-cassandra
+
+  - it: renders ValsSecret for SSL when valsSSLSecret enabled
+    template: cassandra-vals-secret.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.sslEnabled: true
+      cassandra.valsSSLSecret.enabled: true
+      cassandra.valsSSLSecret.ttl: 7200
+      cassandra.valsSSLSecret.data["ca.crt"].ref: "ref+vault://secret/cassandra/ssl/ca"
+      cassandra.valsSSLSecret.data["tls.crt"].ref: "ref+vault://secret/cassandra/ssl/cert"
+      cassandra.valsSSLSecret.data["tls.key"].ref: "ref+vault://secret/cassandra/ssl/key"
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isAPIVersion:
+          of: digitalis.io/v1
+      - isKind:
+          of: ValsSecret
+      - equal:
+          path: spec.ttl
+          value: 7200
+      - equal:
+          path: spec.name
+          value: RELEASE-NAME-url-shortener-cassandra-ssl
+
+  - it: renders both ValsSecrets when both enabled
+    template: cassandra-vals-secret.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.sslEnabled: true
+      cassandra.valsSecret.enabled: true
+      cassandra.valsSecret.data.CASSANDRA_PASSWORD.ref: "ref+vault://secret/cassandra/password"
+      cassandra.valsSSLSecret.enabled: true
+      cassandra.valsSSLSecret.data["ca.crt"].ref: "ref+vault://secret/cassandra/ssl/ca"
+    asserts:
+      - hasDocuments:
+          count: 2

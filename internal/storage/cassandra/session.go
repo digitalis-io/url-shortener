@@ -170,22 +170,58 @@ func cassandraSSLOptions(cfg config.Config) (*gocql.SslOptions, error) {
 }
 
 func ensureSchema(cfg config.Config) error {
+	if !cfg.CassandraCreateKeyspace {
+		return nil
+	}
+
+	stmts := schemaStatements(cfg.CassandraKeyspace, cfg.CassandraReplicationStrategy, cfg.CassandraReplicationFactor)
+
 	cluster, err := baseCluster(cfg)
 	if err != nil {
 		return err
 	}
+
+	// CREATE KEYSPACE requires a no-keyspace session; needs CREATE ON ALL KEYSPACES.
 	session, err := cluster.CreateSession()
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	for _, stmt := range stmts {
+		if !isKeyspaceDDL(stmt) {
+			continue
+		}
+		if err := session.Query(stmt).Exec(); err != nil {
+			session.Close()
+			return err
+		}
+	}
+	session.Close()
 
-	for _, stmt := range schemaStatements(cfg.CassandraKeyspace) {
+	// gocql forbids reusing a TokenAwareHostPolicy across sessions — build a fresh cluster.
+	cluster, err = baseCluster(cfg)
+	if err != nil {
+		return err
+	}
+	cluster.Keyspace = cfg.CassandraKeyspace
+	session, err = cluster.CreateSession()
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+	for _, stmt := range stmts {
+		if isKeyspaceDDL(stmt) {
+			continue
+		}
 		if err := session.Query(stmt).Exec(); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func isKeyspaceDDL(stmt string) bool {
+	upper := strings.ToUpper(strings.TrimSpace(stmt))
+	return strings.HasPrefix(upper, "CREATE KEYSPACE") || strings.HasPrefix(upper, "DROP KEYSPACE") || strings.HasPrefix(upper, "ALTER KEYSPACE")
 }
 
 func (s *Store) Close() {

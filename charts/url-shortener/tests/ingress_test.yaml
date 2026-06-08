@@ -1,0 +1,55 @@
+suite: ingress tests
+templates:
+  - ingress.yaml
+
+tests:
+  - it: does not render Ingress when ingress disabled (default)
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders Ingress with host when ingress enabled
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      ingress.enabled: true
+      ingress.className: nginx
+      ingress.hosts:
+        - host: short.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+      - equal:
+          path: spec.rules[0].host
+          value: short.example.com
+
+  - it: renders TLS when configured
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      ingress.enabled: true
+      ingress.hosts:
+        - host: short.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+      ingress.tls:
+        - secretName: short-example-tls
+          hosts:
+            - short.example.com
+    asserts:
+      - equal:
+          path: spec.tls[0].secretName
+          value: short-example-tls
