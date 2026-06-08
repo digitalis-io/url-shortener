@@ -84,6 +84,11 @@ func (a *Auth) Require(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userContextKey, user)))
 			return
 		}
+		if user, ok := a.headerUser(r); ok {
+			a.setSession(w, user)
+			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userContextKey, user)))
+			return
+		}
 		if user, ok := a.samlUser(r); ok {
 			a.setSession(w, user)
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userContextKey, user)))
@@ -112,6 +117,11 @@ func (a *Auth) RequireCSRF(next http.Handler) http.Handler {
 func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	if a.cfg.AuthDevBypass {
 		a.setSession(w, shorturl.User{ID: a.cfg.DevUserID, Email: a.cfg.DevUserEmail})
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	if user, ok := a.headerUser(r); ok {
+		a.setSession(w, user)
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
@@ -199,6 +209,22 @@ func (a *Auth) sessionUser(r *http.Request) (shorturl.User, sessionPayload, bool
 		return shorturl.User{}, sessionPayload{}, false
 	}
 	return shorturl.User{ID: session.UserID, Email: session.Email}, session, true
+}
+
+// headerUser captures the authenticated user from a trusted request header,
+// for deployments that terminate identity at an upstream proxy such as
+// Cloudflare Access. It is only honored when AUTH_HEADER_ENABLED is set, since
+// the header is trusted without verification: the origin MUST be reachable only
+// through that proxy or any client could spoof the header.
+func (a *Auth) headerUser(r *http.Request) (shorturl.User, bool) {
+	if !a.cfg.AuthHeaderEnabled {
+		return shorturl.User{}, false
+	}
+	email := strings.TrimSpace(r.Header.Get(a.cfg.AuthUserEmailHeader))
+	if email == "" {
+		return shorturl.User{}, false
+	}
+	return shorturl.User{ID: email, Email: email}, true
 }
 
 func (a *Auth) samlUser(r *http.Request) (shorturl.User, bool) {

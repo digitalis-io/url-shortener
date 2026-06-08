@@ -49,16 +49,18 @@ type Config struct {
 	CassandraReplicationStrategy    string
 	CassandraReplicationFactor      int
 
-	SAMLEntityID       string
-	SAMLACSURL         string
-	SAMLIDPMetadataURL string
-	SAMLIDPMetadata    string
-	SAMLPrivateKey     string
-	SAMLCertificate    string
-	SessionSecret      string
-	AuthDevBypass      bool
-	DevUserID          string
-	DevUserEmail       string
+	SAMLEntityID        string
+	SAMLACSURL          string
+	SAMLIDPMetadataURL  string
+	SAMLIDPMetadata     string
+	SAMLPrivateKey      string
+	SAMLCertificate     string
+	SessionSecret       string
+	AuthDevBypass       bool
+	AuthHeaderEnabled   bool
+	AuthUserEmailHeader string
+	DevUserID           string
+	DevUserEmail        string
 
 	CodeLength              int
 	CreateRateLimitPerMin   int
@@ -116,6 +118,8 @@ func Load() (Config, error) {
 		SAMLCertificate:         os.Getenv("SAML_CERTIFICATE"),
 		SessionSecret:           os.Getenv("SESSION_SECRET"),
 		AuthDevBypass:           envBool("AUTH_DEV_BYPASS", false),
+		AuthHeaderEnabled:       envBool("AUTH_HEADER_ENABLED", false),
+		AuthUserEmailHeader:     env("AUTH_USER_EMAIL_HEADER", "Cf-Access-Authenticated-User-Email"),
 		DevUserID:               env("DEV_USER_ID", "local-dev-user"),
 		DevUserEmail:            env("DEV_USER_EMAIL", "dev@example.com"),
 

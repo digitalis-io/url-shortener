@@ -7,11 +7,96 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/digitalis-io/url-shortner/internal/config"
+	"github.com/digitalis-io/url-shortner/internal/shorturl"
 )
+
+func TestRequireHeaderAuthCapturesUser(t *testing.T) {
+	authn, err := New(config.Config{
+		AdminBaseURL:        "http://localhost:8080",
+		SessionSecret:       "test-secret",
+		AuthHeaderEnabled:   true,
+		AuthUserEmailHeader: "Cf-Access-Authenticated-User-Email",
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	var captured shorturl.User
+	handler := authn.Require(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		captured, _ = UserFromContext(r.Context())
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/admin", nil)
+	req.Header.Set("Cf-Access-Authenticated-User-Email", "alice@example.com")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if captured.Email != "alice@example.com" || captured.ID != "alice@example.com" {
+		t.Fatalf("unexpected captured user: %+v", captured)
+	}
+}
+
+func TestRequireHeaderAuthDisabledIgnoresHeader(t *testing.T) {
+	authn, err := New(config.Config{
+		AdminBaseURL:        "http://localhost:8080",
+		SessionSecret:       "test-secret",
+		AuthHeaderEnabled:   false,
+		AuthUserEmailHeader: "Cf-Access-Authenticated-User-Email",
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	handler := authn.Require(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("handler should not be reached when header auth is disabled")
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/admin", nil)
+	req.Header.Set("Cf-Access-Authenticated-User-Email", "alice@example.com")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusFound {
+		t.Fatalf("expected redirect to login, got %d", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "/login" {
+		t.Fatalf("expected redirect to /login, got %q", loc)
+	}
+}
+
+func TestRequireHeaderAuthEnabledMissingHeaderRedirects(t *testing.T) {
+	authn, err := New(config.Config{
+		AdminBaseURL:        "http://localhost:8080",
+		SessionSecret:       "test-secret",
+		AuthHeaderEnabled:   true,
+		AuthUserEmailHeader: "Cf-Access-Authenticated-User-Email",
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	handler := authn.Require(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("handler should not be reached without the identity header")
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/admin", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusFound {
+		t.Fatalf("expected redirect, got %d", rec.Code)
+	}
+}
 
 func TestNewAllowsMissingSAMLConfig(t *testing.T) {
 	authn, err := New(config.Config{
