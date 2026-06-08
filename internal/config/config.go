@@ -45,6 +45,9 @@ type Config struct {
 	CassandraSpeculativeEnabled     bool
 	CassandraSpeculativeAttempts    int
 	CassandraSpeculativeDelay       time.Duration
+	CassandraCreateKeyspace         bool
+	CassandraReplicationStrategy    string
+	CassandraReplicationFactor      int
 
 	SAMLEntityID       string
 	SAMLACSURL         string
@@ -101,6 +104,9 @@ func Load() (Config, error) {
 		CassandraSpeculativeEnabled:     envBool("CASSANDRA_SPECULATIVE_EXECUTION_ENABLED", false),
 		CassandraSpeculativeAttempts:    envInt("CASSANDRA_SPECULATIVE_ATTEMPTS", 1),
 		CassandraSpeculativeDelay:       envDuration("CASSANDRA_SPECULATIVE_DELAY", 50*time.Millisecond),
+		CassandraCreateKeyspace:         envBool("URL_SHORTENER_CREATE_KEYSPACE", false),
+		CassandraReplicationStrategy:    env("CASSANDRA_REPLICATION_STRATEGY", "SimpleStrategy"),
+		CassandraReplicationFactor:      envInt("CASSANDRA_REPLICATION_FACTOR", 1),
 
 		SAMLEntityID:            env("SAML_ENTITY_ID", adminBaseURL+"/saml/metadata"),
 		SAMLACSURL:              env("SAML_ACS_URL", adminBaseURL+"/saml/acs"),
@@ -112,6 +118,7 @@ func Load() (Config, error) {
 		AuthDevBypass:           envBool("AUTH_DEV_BYPASS", false),
 		DevUserID:               env("DEV_USER_ID", "local-dev-user"),
 		DevUserEmail:            env("DEV_USER_EMAIL", "dev@example.com"),
+
 		CodeLength:              envInt("CODE_LENGTH", 7),
 		CreateRateLimitPerMin:   envInt("CREATE_RATE_LIMIT_PER_MINUTE", 60),
 		ClickEventBufferSize:    envInt("CLICK_EVENT_BUFFER_SIZE", 1000),

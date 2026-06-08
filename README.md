@@ -1,4 +1,10 @@
-# url-shortner
+<p align="center">
+  <a href="https://digitalis.io">
+    <img src="https://digitalis.io/wp-content/uploads/2020/06/digitalis-logo.png" alt="Digitalis.IO" width="300">
+  </a>
+</p>
+
+# url-shortener
 
 A Go URL shortener backed by Cassandra.
 
@@ -42,50 +48,51 @@ Create a short URL from the UI, then use the generated public short URL to test 
 
 ## Configuration
 
-Important environment variables:
-
-```text
-HTTP_ADDR=:8080
-PUBLIC_BASE_URL=https://short.example
-ADMIN_BASE_URL=https://admin-short.example
-CASSANDRA_HOSTS=localhost:9042
-CASSANDRA_KEYSPACE=url_shortener
-CASSANDRA_USERNAME=
-CASSANDRA_PASSWORD=
-CASSANDRA_SSL_ENABLED=false
-CASSANDRA_SSL_CA_FILE=
-CASSANDRA_SSL_SERVER_NAME=
-CASSANDRA_SSL_INSECURE_SKIP_VERIFY=false
-CASSANDRA_SSL_CERT_FILE=
-CASSANDRA_SSL_KEY_FILE=
-CASSANDRA_CONSISTENCY=LOCAL_QUORUM
-CASSANDRA_SERIAL_CONSISTENCY=LOCAL_SERIAL
-CASSANDRA_LOCAL_DC=
-CASSANDRA_PROTO_VERSION=4
-CASSANDRA_NUM_CONNS=2
-CASSANDRA_PAGE_SIZE=5000
-CASSANDRA_CONNECT_TIMEOUT=10s
-CASSANDRA_TIMEOUT=10s
-CASSANDRA_WRITE_TIMEOUT=
-CASSANDRA_RECONNECT_INTERVAL=60s
-CASSANDRA_SOCKET_KEEPALIVE=15s
-CASSANDRA_MAX_WAIT_SCHEMA_AGREEMENT=60s
-CASSANDRA_RETRY_ATTEMPTS=3
-CASSANDRA_RETRY_MIN_BACKOFF=100ms
-CASSANDRA_RETRY_MAX_BACKOFF=2s
-CASSANDRA_SPECULATIVE_EXECUTION_ENABLED=false
-CASSANDRA_SPECULATIVE_ATTEMPTS=1
-CASSANDRA_SPECULATIVE_DELAY=50ms
-SESSION_SECRET=
-AUTH_DEV_BYPASS=false
-SAML_ENTITY_ID=https://admin-short.example/saml/metadata
-SAML_ACS_URL=https://admin-short.example/saml/acs
-SAML_IDP_METADATA_URL=
-SAML_IDP_METADATA=
-SAML_PRIVATE_KEY=
-SAML_CERTIFICATE=
-CODE_LENGTH=7
-```
+| Variable | Default | Description |
+|---|---|---|
+| `HTTP_ADDR` | `:8080` | Listen address |
+| `PUBLIC_BASE_URL` | — | **Required.** Base URL for generated short URLs |
+| `ADMIN_BASE_URL` | `PUBLIC_BASE_URL` | Base URL for admin UI and SAML routes |
+| `CASSANDRA_HOSTS` | `localhost:9042` | Comma-separated `host:port` list |
+| `CASSANDRA_KEYSPACE` | `url_shortener` | Cassandra keyspace |
+| `CASSANDRA_USERNAME` | `""` | Cassandra username |
+| `CASSANDRA_PASSWORD` | `""` | Cassandra password |
+| `URL_SHORTENER_CREATE_KEYSPACE` | `false` | When `true`, create the keyspace and tables on startup. Requires `CREATE ON ALL KEYSPACES`. When `false` (default), assumes keyspace and tables are pre-provisioned — only `SELECT`, `MODIFY`, `ALTER` on the keyspace are needed. |
+| `CASSANDRA_REPLICATION_STRATEGY` | `SimpleStrategy` | Replication strategy used when `URL_SHORTENER_CREATE_KEYSPACE=true`. Use `NetworkTopologyStrategy` for multi-DC production clusters. |
+| `CASSANDRA_REPLICATION_FACTOR` | `1` | Replication factor used when `URL_SHORTENER_CREATE_KEYSPACE=true`. Set to `3` or higher for production. |
+| `CASSANDRA_SSL_ENABLED` | `false` | Enable TLS |
+| `CASSANDRA_SSL_CA_FILE` | `""` | CA certificate path |
+| `CASSANDRA_SSL_SERVER_NAME` | `""` | TLS server name override (SNI) |
+| `CASSANDRA_SSL_INSECURE_SKIP_VERIFY` | `false` | Skip server cert verification — dev only |
+| `CASSANDRA_SSL_CERT_FILE` | `""` | Client certificate path (mTLS) |
+| `CASSANDRA_SSL_KEY_FILE` | `""` | Client private key path (mTLS) |
+| `CASSANDRA_CONSISTENCY` | `LOCAL_QUORUM` | Read/write consistency level |
+| `CASSANDRA_SERIAL_CONSISTENCY` | `LOCAL_SERIAL` | LWT serial consistency level |
+| `CASSANDRA_LOCAL_DC` | `""` | Local DC for token-aware routing (required with `LOCAL_*` levels in multi-DC) |
+| `CASSANDRA_PROTO_VERSION` | `4` | CQL native protocol version |
+| `CASSANDRA_NUM_CONNS` | `2` | Connections per host |
+| `CASSANDRA_PAGE_SIZE` | `5000` | Query page size |
+| `CASSANDRA_CONNECT_TIMEOUT` | `10s` | Connection timeout |
+| `CASSANDRA_TIMEOUT` | `10s` | Query timeout |
+| `CASSANDRA_WRITE_TIMEOUT` | `""` | Write timeout (defaults to `CASSANDRA_TIMEOUT`) |
+| `CASSANDRA_RECONNECT_INTERVAL` | `60s` | Reconnect interval after host failure |
+| `CASSANDRA_SOCKET_KEEPALIVE` | `15s` | TCP keepalive interval |
+| `CASSANDRA_MAX_WAIT_SCHEMA_AGREEMENT` | `60s` | Max wait for schema agreement |
+| `CASSANDRA_RETRY_ATTEMPTS` | `3` | Idempotent retry attempts (`0` = disabled) |
+| `CASSANDRA_RETRY_MIN_BACKOFF` | `100ms` | Retry backoff minimum |
+| `CASSANDRA_RETRY_MAX_BACKOFF` | `2s` | Retry backoff maximum |
+| `CASSANDRA_SPECULATIVE_EXECUTION_ENABLED` | `false` | Enable speculative reads |
+| `CASSANDRA_SPECULATIVE_ATTEMPTS` | `1` | Speculative attempt count |
+| `CASSANDRA_SPECULATIVE_DELAY` | `50ms` | Delay before issuing speculative retry |
+| `SESSION_SECRET` | — | **Required.** Session signing secret |
+| `AUTH_DEV_BYPASS` | `false` | Skip SAML auth — local dev only |
+| `SAML_ENTITY_ID` | `ADMIN_BASE_URL/saml/metadata` | SAML entity ID |
+| `SAML_ACS_URL` | `ADMIN_BASE_URL/saml/acs` | SAML ACS URL |
+| `SAML_IDP_METADATA_URL` | `""` | IdP metadata URL (fetched at startup) |
+| `SAML_IDP_METADATA` | `""` | Inline IdP metadata XML |
+| `SAML_PRIVATE_KEY` | `""` | SP private key PEM |
+| `SAML_CERTIFICATE` | `""` | SP certificate PEM |
+| `CODE_LENGTH` | `7` | Short code length |
 
 `PUBLIC_BASE_URL` is used in generated short URLs. `ADMIN_BASE_URL` is used for the admin UI, SAML routes, and admin API calls.
 
@@ -150,7 +157,7 @@ GitHub Actions runs the unit tests, binary build, Cassandra integration test, ad
 When a GitHub release is published, the same workflow waits for the test job to pass, then builds and pushes the Docker image to GitHub Container Registry:
 
 ```text
-ghcr.io/digitalis-io/url-shortner
+ghcr.io/digitalis-io/url-shortener
 ```
 
 ## Container
@@ -173,6 +180,31 @@ docker run --rm -p 8080:8080 \
   url-shortener:local
 ```
 
+## Helm Chart
+
+The chart is published to the GitHub Container Registry OCI endpoint and works with any Kubernetes 1.26+ cluster.
+
+**Install:**
+
+```bash
+helm install url-shortener oci://ghcr.io/digitalis-io/helm-charts/url-shortener \
+  --version 0.1.0 \
+  --set app.publicBaseURL=https://short.example.com \
+  --set app.adminBaseURL=https://admin.example.com \
+  --set cassandra.hosts=cassandra:9042 \
+  --set session.secret=your-session-secret
+```
+
+**Upgrade:**
+
+```bash
+helm upgrade url-shortener oci://ghcr.io/digitalis-io/helm-charts/url-shortener \
+  --version 0.2.0 \
+  -f my-values.yaml
+```
+
+See [`charts/url-shortener/README.md`](charts/url-shortener/README.md) for the full values reference.
+
 ## Cassandra Tables
 
 - `urls_by_code`: redirect and metadata source of truth.
@@ -180,3 +212,7 @@ docker run --rm -p 8080:8080 \
 - `hits_by_short_url_hour`: hourly hit counters for admin charts.
 
 URL metadata tables use a Cassandra `default_time_to_live` of `7776000` seconds, which is 90 days. The hourly hit counter table does not use this URL metadata TTL.
+
+---
+
+Maintained by [Digitalis.io](https://digitalis.io). For support, visit [digitalis.io/contact](https://digitalis.io/contact).

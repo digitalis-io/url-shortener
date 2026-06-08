@@ -1,10 +1,15 @@
 package cassandra
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
-func schemaStatements(keyspace string) []string {
+func schemaStatements(keyspace, replicationStrategy string, replicationFactor int) []string {
+	replication := fmt.Sprintf("{'class': '%s', 'replication_factor': %d}", replicationStrategy, replicationFactor)
 	schema := strings.ReplaceAll(baseSchema, "url_shortener.", keyspace+".")
 	schema = strings.ReplaceAll(schema, "CREATE KEYSPACE IF NOT EXISTS url_shortener", "CREATE KEYSPACE IF NOT EXISTS "+keyspace)
+	schema = strings.ReplaceAll(schema, "__REPLICATION__", replication)
 	parts := strings.Split(schema, ";")
 	out := make([]string, 0, len(parts))
 	for _, part := range parts {
@@ -18,10 +23,7 @@ func schemaStatements(keyspace string) []string {
 
 const baseSchema = `
 CREATE KEYSPACE IF NOT EXISTS url_shortener
-WITH replication = {
-  'class': 'SimpleStrategy',
-  'replication_factor': 1
-};
+WITH replication = __REPLICATION__;
 
 CREATE TABLE IF NOT EXISTS url_shortener.urls_by_code (
   code text PRIMARY KEY,

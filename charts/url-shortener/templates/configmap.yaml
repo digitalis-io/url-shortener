@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "url-shortener.fullname" . }}
+  labels:
+    {{- include "url-shortener.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.app.env | quote }}
+  HTTP_ADDR: {{ .Values.app.httpAddr | quote }}
+  PUBLIC_BASE_URL: {{ .Values.app.publicBaseURL | quote }}
+  ADMIN_BASE_URL: {{ .Values.app.adminBaseURL | quote }}
+  CODE_LENGTH: {{ .Values.app.codeLength | quote }}
+  CREATE_RATE_LIMIT_PER_MINUTE: {{ .Values.app.createRateLimitPerMinute | quote }}
+  CLICK_EVENT_BUFFER_SIZE: {{ .Values.app.clickEventBufferSize | quote }}
+  CLICK_EVENT_FLUSH_INTERVAL: {{ .Values.app.clickEventFlushInterval | quote }}
+
+  CASSANDRA_HOSTS: {{ .Values.cassandra.hosts | quote }}
+  CASSANDRA_KEYSPACE: {{ .Values.cassandra.keyspace | quote }}
+  {{- if .Values.cassandra.createKeyspace }}
+  URL_SHORTENER_CREATE_KEYSPACE: "true"
+  CASSANDRA_REPLICATION_STRATEGY: {{ .Values.cassandra.replicationStrategy | quote }}
+  CASSANDRA_REPLICATION_FACTOR: {{ .Values.cassandra.replicationFactor | quote }}
+  {{- end }}
+  {{- if .Values.cassandra.username }}
+  CASSANDRA_USERNAME: {{ .Values.cassandra.username | quote }}
+  {{- end }}
+  CASSANDRA_SSL_ENABLED: {{ .Values.cassandra.sslEnabled | quote }}
+  {{- if .Values.cassandra.sslEnabled }}
+  {{- if .Values.cassandra.sslServerName }}
+  CASSANDRA_SSL_SERVER_NAME: {{ .Values.cassandra.sslServerName | quote }}
+  {{- end }}
+  CASSANDRA_SSL_INSECURE_SKIP_VERIFY: {{ .Values.cassandra.sslInsecureSkipVerify | quote }}
+  {{- if or .Values.cassandra.existingSSLSecret .Values.cassandra.valsSSLSecret.enabled }}
+  CASSANDRA_SSL_CA_FILE: "/etc/cassandra-ssl/ca.crt"
+  CASSANDRA_SSL_CERT_FILE: "/etc/cassandra-ssl/tls.crt"
+  CASSANDRA_SSL_KEY_FILE: "/etc/cassandra-ssl/tls.key"
+  {{- else }}
+  {{- if .Values.cassandra.sslCA }}
+  CASSANDRA_SSL_CA_FILE: "/etc/cassandra-ssl/ca.crt"
+  {{- end }}
+  {{- if .Values.cassandra.sslCert }}
+  CASSANDRA_SSL_CERT_FILE: "/etc/cassandra-ssl/tls.crt"
+  {{- end }}
+  {{- if .Values.cassandra.sslKey }}
+  CASSANDRA_SSL_KEY_FILE: "/etc/cassandra-ssl/tls.key"
+  {{- end }}
+  {{- end }}
+  {{- end }}
+  CASSANDRA_CONSISTENCY: {{ .Values.cassandra.consistency | quote }}
+  CASSANDRA_SERIAL_CONSISTENCY: {{ .Values.cassandra.serialConsistency | quote }}
+  {{- if .Values.cassandra.localDC }}
+  CASSANDRA_LOCAL_DC: {{ .Values.cassandra.localDC | quote }}
+  {{- end }}
+  CASSANDRA_PROTO_VERSION: {{ .Values.cassandra.protoVersion | quote }}
+  CASSANDRA_NUM_CONNS: {{ .Values.cassandra.numConns | quote }}
+  CASSANDRA_PAGE_SIZE: {{ .Values.cassandra.pageSize | quote }}
+  CASSANDRA_CONNECT_TIMEOUT: {{ .Values.cassandra.connectTimeout | quote }}
+  CASSANDRA_TIMEOUT: {{ .Values.cassandra.timeout | quote }}
+  {{- if .Values.cassandra.writeTimeout }}
+  CASSANDRA_WRITE_TIMEOUT: {{ .Values.cassandra.writeTimeout | quote }}
+  {{- end }}
+  CASSANDRA_RECONNECT_INTERVAL: {{ .Values.cassandra.reconnectInterval | quote }}
+  CASSANDRA_SOCKET_KEEPALIVE: {{ .Values.cassandra.socketKeepalive | quote }}
+  CASSANDRA_MAX_WAIT_SCHEMA_AGREEMENT: {{ .Values.cassandra.maxWaitSchemaAgreement | quote }}
+  CASSANDRA_RETRY_ATTEMPTS: {{ .Values.cassandra.retryAttempts | quote }}
+  CASSANDRA_RETRY_MIN_BACKOFF: {{ .Values.cassandra.retryMinBackoff | quote }}
+  CASSANDRA_RETRY_MAX_BACKOFF: {{ .Values.cassandra.retryMaxBackoff | quote }}
+  CASSANDRA_SPECULATIVE_EXECUTION_ENABLED: {{ .Values.cassandra.speculativeExecutionEnabled | quote }}
+  CASSANDRA_SPECULATIVE_ATTEMPTS: {{ .Values.cassandra.speculativeAttempts | quote }}
+  CASSANDRA_SPECULATIVE_DELAY: {{ .Values.cassandra.speculativeDelay | quote }}
+
+  {{- if .Values.saml.entityID }}
+  SAML_ENTITY_ID: {{ .Values.saml.entityID | quote }}
+  {{- end }}
+  {{- if .Values.saml.acsURL }}
+  SAML_ACS_URL: {{ .Values.saml.acsURL | quote }}
+  {{- end }}
+  {{- if .Values.saml.idpMetadataURL }}
+  SAML_IDP_METADATA_URL: {{ .Values.saml.idpMetadataURL | quote }}
+  {{- end }}
+
+  AUTH_DEV_BYPASS: {{ .Values.auth.devBypass | quote }}
+  {{- if .Values.auth.devUserID }}
+  DEV_USER_ID: {{ .Values.auth.devUserID | quote }}
+  {{- end }}
+  {{- if .Values.auth.devUserEmail }}
+  DEV_USER_EMAIL: {{ .Values.auth.devUserEmail | quote }}
+  {{- end }}

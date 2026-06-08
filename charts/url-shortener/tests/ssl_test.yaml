@@ -1,0 +1,172 @@
+suite: Cassandra SSL tests
+templates:
+  - cassandra-ssl-secret.yaml
+  - configmap.yaml
+  - deployment.yaml
+
+tests:
+  - it: no SSL secret rendered when sslEnabled false (default)
+    template: cassandra-ssl-secret.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: no SSL secret rendered when sslEnabled true but no content
+    template: cassandra-ssl-secret.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.sslEnabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders SSL secret with CA when sslCA provided
+    template: cassandra-ssl-secret.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.sslEnabled: true
+      cassandra.sslCA: "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----"
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Secret
+      - exists:
+          path: data["ca.crt"]
+
+  - it: sets CA file path in configmap when sslCA provided
+    template: configmap.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.sslEnabled: true
+      cassandra.sslCA: "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----"
+    asserts:
+      - equal:
+          path: data.CASSANDRA_SSL_CA_FILE
+          value: "/etc/cassandra-ssl/ca.crt"
+      - notExists:
+          path: data.CASSANDRA_SSL_CERT_FILE
+      - notExists:
+          path: data.CASSANDRA_SSL_KEY_FILE
+
+  - it: sets all file paths when existingSSLSecret provided
+    template: configmap.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.sslEnabled: true
+      cassandra.existingSSLSecret: my-cassandra-ssl
+    asserts:
+      - equal:
+          path: data.CASSANDRA_SSL_CA_FILE
+          value: "/etc/cassandra-ssl/ca.crt"
+      - equal:
+          path: data.CASSANDRA_SSL_CERT_FILE
+          value: "/etc/cassandra-ssl/tls.crt"
+      - equal:
+          path: data.CASSANDRA_SSL_KEY_FILE
+          value: "/etc/cassandra-ssl/tls.key"
+
+  - it: mounts SSL volume in deployment when sslCA provided
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.sslEnabled: true
+      cassandra.sslCA: "-----BEGIN CERTIFICATE-----\nMIIB...\n-----END CERTIFICATE-----"
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: cassandra-ssl
+            secret:
+              secretName: RELEASE-NAME-url-shortener-cassandra-ssl
+              defaultMode: 256
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: cassandra-ssl
+            mountPath: /etc/cassandra-ssl
+            readOnly: true
+
+  - it: no volume mount when sslEnabled false
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts
+
+  - it: no SSL file paths in configmap when sslEnabled false
+    template: configmap.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - notExists:
+          path: data.CASSANDRA_SSL_CA_FILE
+      - notExists:
+          path: data.CASSANDRA_SSL_CERT_FILE
+      - notExists:
+          path: data.CASSANDRA_SSL_KEY_FILE
+
+  - it: sets all file paths in configmap when valsSSLSecret enabled
+    template: configmap.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.sslEnabled: true
+      cassandra.valsSSLSecret.enabled: true
+      cassandra.valsSSLSecret.ttl: 86400
+    asserts:
+      - equal:
+          path: data.CASSANDRA_SSL_CA_FILE
+          value: "/etc/cassandra-ssl/ca.crt"
+      - equal:
+          path: data.CASSANDRA_SSL_CERT_FILE
+          value: "/etc/cassandra-ssl/tls.crt"
+      - equal:
+          path: data.CASSANDRA_SSL_KEY_FILE
+          value: "/etc/cassandra-ssl/tls.key"
+
+  - it: mounts SSL volume in deployment when valsSSLSecret enabled
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      cassandra.sslEnabled: true
+      cassandra.valsSSLSecret.enabled: true
+      cassandra.valsSSLSecret.ttl: 86400
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: cassandra-ssl
+            secret:
+              secretName: RELEASE-NAME-url-shortener-cassandra-ssl
+              defaultMode: 256
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: cassandra-ssl
+            mountPath: /etc/cassandra-ssl
+            readOnly: true

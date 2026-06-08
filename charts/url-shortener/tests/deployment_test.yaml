@@ -1,0 +1,144 @@
+suite: deployment tests
+templates:
+  - deployment.yaml
+  - configmap.yaml
+  - secret.yaml
+
+tests:
+  - it: uses Chart.AppVersion when image.tag is empty
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/digitalis-io/url-shortener:0.1.0
+
+  - it: uses custom image.tag when set
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      image.tag: v1.2.3
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: ghcr.io/digitalis-io/url-shortener:v1.2.3
+
+  - it: enforces non-root security context
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 65532
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+
+  - it: injects SESSION_SECRET from secretKeyRef
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SESSION_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-url-shortener-session
+                key: SESSION_SECRET
+
+  - it: injects CASSANDRA_PASSWORD from secretKeyRef
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CASSANDRA_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-url-shortener-cassandra
+                key: CASSANDRA_PASSWORD
+
+  - it: AUTH_DEV_BYPASS defaults to false in configmap
+    template: configmap.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+    asserts:
+      - equal:
+          path: data.AUTH_DEV_BYPASS
+          value: "false"
+
+  - it: AUTH_DEV_BYPASS can be set to true
+    template: configmap.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      auth.devBypass: true
+    asserts:
+      - equal:
+          path: data.AUTH_DEV_BYPASS
+          value: "true"
+
+  - it: replicaCount is applied to the Deployment
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      replicaCount: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: replicas field absent when autoscaling enabled
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      autoscaling.enabled: true
+    asserts:
+      - notExists:
+          path: spec.replicas
+
+  - it: uses existing session secret when existingSecret set
+    template: deployment.yaml
+    set:
+      app.publicBaseURL: https://short.example.com
+      app.adminBaseURL: https://admin.example.com
+      cassandra.hosts: cassandra:9042
+      session.existingSecret: my-session-secret
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: SESSION_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: my-session-secret
+                key: SESSION_SECRET

@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["app", "cassandra"],
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        }
+      }
+    },
+    "app": {
+      "type": "object",
+      "required": ["publicBaseURL", "adminBaseURL"],
+      "properties": {
+        "publicBaseURL": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Public-facing base URL (required)"
+        },
+        "adminBaseURL": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Admin-facing base URL (required)"
+        },
+        "codeLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "createRateLimitPerMinute": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clickEventBufferSize": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "cassandra": {
+      "type": "object",
+      "required": ["hosts", "keyspace"],
+      "properties": {
+        "hosts": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Comma-separated Cassandra host:port list (required)"
+        },
+        "keyspace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createKeyspace": {
+          "type": "boolean"
+        },
+        "replicationStrategy": {
+          "type": "string"
+        },
+        "replicationFactor": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "protoVersion": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 5
+        },
+        "numConns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "retryAttempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "speculativeAttempts": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "devBypass": {
+          "type": "boolean"
+        }
+      }
+    },
+    "autoscaling": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "minReplicas": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxReplicas": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "targetCPUUtilizationPercentage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    }
+  }
+}

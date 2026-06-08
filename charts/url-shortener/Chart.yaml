@@ -1,0 +1,15 @@
+apiVersion: v2
+name: url-shortener
+description: A self-hosted URL shortener service backed by Apache Cassandra
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/digitalis-io/url-shortener
+sources:
+  - https://github.com/digitalis-io/url-shortener
+keywords:
+  - url-shortener
+  - cassandra
+maintainers:
+  - name: Digitalis.io
+    url: https://digitalis.io

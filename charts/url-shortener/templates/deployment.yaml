@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "url-shortener.fullname" . }}
+  labels:
+    {{- include "url-shortener.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "url-shortener.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "url-shortener.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "url-shortener.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "url-shortener.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "url-shortener.fullname" . }}
+          env:
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "url-shortener.sessionSecretName" . }}
+                  key: SESSION_SECRET
+            - name: CASSANDRA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "url-shortener.cassandraSecretName" . }}
+                  key: CASSANDRA_PASSWORD
+            - name: SAML_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "url-shortener.samlSecretName" . }}
+                  key: SAML_PRIVATE_KEY
+            - name: SAML_CERTIFICATE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "url-shortener.samlSecretName" . }}
+                  key: SAML_CERTIFICATE
+            - name: SAML_IDP_METADATA
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "url-shortener.samlSecretName" . }}
+                  key: SAML_IDP_METADATA
+          {{- if and .Values.cassandra.sslEnabled (or .Values.cassandra.sslCA .Values.cassandra.sslCert .Values.cassandra.sslKey .Values.cassandra.existingSSLSecret .Values.cassandra.valsSSLSecret.enabled) }}
+          volumeMounts:
+            - name: cassandra-ssl
+              mountPath: /etc/cassandra-ssl
+              readOnly: true
+          {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- if and .Values.cassandra.sslEnabled (or .Values.cassandra.sslCA .Values.cassandra.sslCert .Values.cassandra.sslKey .Values.cassandra.existingSSLSecret .Values.cassandra.valsSSLSecret.enabled) }}
+      volumes:
+        - name: cassandra-ssl
+          secret:
+            secretName: {{ include "url-shortener.cassandraSSLSecretName" . }}
+            defaultMode: 0400
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

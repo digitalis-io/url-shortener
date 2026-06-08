@@ -1,0 +1,171 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/digitalis-io/url-shortener
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  #  - host: short.example.com
+  #    paths:
+  #      - path: /
+  #        pathType: Prefix
+  tls: []
+  #  - secretName: short-example-tls
+  #    hosts:
+  #      - short.example.com
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+app:
+  env: production
+  httpAddr: ":8080"
+  publicBaseURL: ""
+  adminBaseURL: ""
+  codeLength: 7
+  createRateLimitPerMinute: 60
+  clickEventBufferSize: 1000
+  clickEventFlushInterval: "1s"
+
+cassandra:
+  hosts: ""
+  keyspace: "url_shortener"
+  createKeyspace: false
+  replicationStrategy: "SimpleStrategy"
+  replicationFactor: 1
+  username: ""
+  password: ""
+  existingSecret: ""
+  # vals-operator: render a ValsSecret for Cassandra credentials instead of a plain Secret.
+  # vals-operator creates a K8s Secret named valsSecret.name (or <release>-cassandra if unset).
+  valsSecret:
+    enabled: false
+    name: ""      # name of the Secret vals-operator will create; defaults to <release>-cassandra
+    ttl: 3600
+    labels: {}
+    data:
+      CASSANDRA_PASSWORD:
+        ref: ""
+        encoding: text
+
+  sslEnabled: false
+  sslServerName: ""
+  sslInsecureSkipVerify: false
+  # Inline PEM content — chart renders a Secret and mounts it at /etc/cassandra-ssl/
+  sslCA: ""
+  sslCert: ""
+  sslKey: ""
+  # Use an existing Secret instead of inline content.
+  # Must contain keys: ca.crt (optional), tls.crt (optional), tls.key (optional)
+  existingSSLSecret: ""
+  # vals-operator: render a ValsSecret for Cassandra SSL certificates instead of a plain Secret.
+  # vals-operator creates a K8s Secret named valsSSLSecret.name (or <release>-cassandra-ssl if unset).
+  valsSSLSecret:
+    enabled: false
+    name: ""      # name of the Secret vals-operator will create; defaults to <release>-cassandra-ssl
+    ttl: 3600
+    labels: {}
+    data:
+      ca.crt:
+        ref: ""
+        encoding: text
+      tls.crt:
+        ref: ""
+        encoding: text
+      tls.key:
+        ref: ""
+        encoding: text
+  consistency: "LOCAL_QUORUM"
+  serialConsistency: "LOCAL_SERIAL"
+  localDC: ""
+  protoVersion: 4
+  numConns: 2
+  pageSize: 5000
+  connectTimeout: "10s"
+  timeout: "10s"
+  writeTimeout: ""
+  reconnectInterval: "60s"
+  socketKeepalive: "15s"
+  maxWaitSchemaAgreement: "60s"
+  retryAttempts: 3
+  retryMinBackoff: "100ms"
+  retryMaxBackoff: "2s"
+  speculativeExecutionEnabled: false
+  speculativeAttempts: 1
+  speculativeDelay: "50ms"
+
+session:
+  secret: ""
+  existingSecret: ""
+
+saml:
+  entityID: ""
+  acsURL: ""
+  idpMetadataURL: ""
+  idpMetadata: ""
+  privateKey: ""
+  certificate: ""
+  existingSecret: ""
+
+auth:
+  devBypass: false
+  devUserID: "local-dev-user"
+  devUserEmail: "dev@example.com"
