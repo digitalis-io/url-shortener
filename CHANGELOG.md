@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- CI now publishes the container image and Helm chart on any `v*` tag push (`startsWith(github.ref, 'refs/tags/v')`) instead of only on a published GitHub Release; removed the `release: published` trigger to avoid duplicate builds
+
 ### Added
 
 - `cassandra.createKeyspace` Helm value / `URL_SHORTENER_CREATE_KEYSPACE` env var: when `true`, the app creates the keyspace and tables on startup (requires `CREATE ON ALL KEYSPACES`); defaults to `false` — assumes keyspace and tables are pre-provisioned

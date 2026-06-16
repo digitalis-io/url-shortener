@@ -49,6 +49,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "url-shortener.sessionSecretName" . }}
                   key: SESSION_SECRET
+            - name: CASSANDRA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "url-shortener.cassandraSecretName" . }}
+                  key: CASSANDRA_USERNAME
             - name: CASSANDRA_PASSWORD
               valueFrom:
                 secretKeyRef:
