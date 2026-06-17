@@ -347,7 +347,7 @@ func newSAMLSP(cfg config.Config) (*samlsp.Middleware, error) {
 		IDPMetadata:        metadata,
 		DefaultRedirectURI: "/",
 		CookieName:         "url_shortener_saml",
-		CookieSameSite:     http.SameSiteLaxMode,
+		CookieSameSite:     http.SameSiteNoneMode,
 	}
 	return samlsp.New(opts)
 }

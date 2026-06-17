@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- SAML login failing with `InResponseTo does not match any of the possible request IDs (expected [])`: the request-tracking cookie used `SameSite=Lax`, so browsers dropped it on the cross-site `POST` from the IdP to `/saml/acs`. Changed `CookieSameSite` to `None` (sent with `Secure` over HTTPS) so the tracker cookie survives the ACS callback
+
 ## [0.0.6] - 2026-06-17
 
 ### Changed
