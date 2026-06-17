@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-06-17
+
 ### Changed
 
 - CI now publishes the container image and Helm chart on any `v*` tag push (`startsWith(github.ref, 'refs/tags/v')`) instead of only on a published GitHub Release; removed the `release: published` trigger to avoid duplicate builds
@@ -25,4 +27,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cassandra TLS support: inline PEM content (`cassandra.sslCA/sslCert/sslKey`) rendered into a Secret and volume-mounted at `/etc/cassandra-ssl/`; or `cassandra.existingSSLSecret` to reference an existing Secret
 - vals-operator support: `cassandra.valsSecret` and `cassandra.valsSSLSecret` blocks render `ValsSecret` (digitalis.io/v1) resources so vals-operator manages the Cassandra auth and SSL Secrets from external stores (Vault, AWS SSM, etc.)
 
-[Unreleased]: https://github.com/digitalis-io/url-shortener/compare/HEAD...HEAD
+[Unreleased]: https://github.com/digitalis-io/url-shortener/compare/v0.0.6...HEAD
+[0.0.6]: https://github.com/digitalis-io/url-shortener/compare/v0.0.5...v0.0.6
